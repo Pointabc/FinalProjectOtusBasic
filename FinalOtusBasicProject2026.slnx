@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="HomeFinancesTelegramBot/HomeFinancesTelegramBot.csproj" />
+  <Project Path="TelegramBotHomeFinancesLib/TelegramBotHomeFinancesLib.csproj" />
+</Solution>

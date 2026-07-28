@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="linq2db" Version="6.3.0" />
+		<PackageReference Include="linq2db.PostgreSQL" Version="6.3.0" />
+		<PackageReference Include="Npgsql" Version="10.0.3" />
+		<PackageReference Include="Telegram.Bot" Version="22.9.6.1" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Core\BackgroundTasks\" />
+	  <Folder Include="Core\Helpers\" />
+	  <Folder Include="Core\Exceptions\" />
+	</ItemGroup>
+</Project>
