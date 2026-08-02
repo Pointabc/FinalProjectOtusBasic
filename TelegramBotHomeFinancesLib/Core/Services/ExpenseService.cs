@@ -19,6 +19,7 @@ internal class ExpenseService : IExpenseService
             ExpenseId = Guid.NewGuid(),
             User = user,
             expenseType = expenseType,
+            Amount = amount,
             CreatedAt = DateTime.UtcNow,
             Note = note,
         };

@@ -24,6 +24,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
         IIncomeTypeService _incomeTypeService;
         IExpenseTypeService _expenseTypeService;
         IIncomeService _incomeService;
+        IExpenseService _expenseService;
         IUserRepository _userRepository;
         IScenarioContextRepository _contextRepository;
         ITelegramBotClient _botClient;
@@ -38,6 +39,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             IIncomeTypeService incomeTypeService,
             IExpenseTypeService expenseTypeService,
             IIncomeService incomeService,
+            IExpenseService expenseService,
             IUserRepository userRepository,
             IScenarioContextRepository contextRepository,
             ITelegramBotClient botClient)
@@ -49,6 +51,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             _incomeTypeService = incomeTypeService ?? throw new ArgumentNullException();
             _expenseTypeService = expenseTypeService ?? throw new ArgumentNullException();
             _incomeService = incomeService ?? throw new ArgumentNullException();
+            _expenseService = expenseService ?? throw new ArgumentNullException();
             _userRepository = userRepository ?? throw new ArgumentNullException();
             _contextRepository = contextRepository ?? throw new ArgumentNullException();
             _botClient = botClient ?? throw new ArgumentNullException();
@@ -60,6 +63,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
         void RegisterScenarios()
         {
             _scenarios.TryAdd(ScenarioType.AddIncome, new AddIncomeScenario(_userService, _incomeService, _incomeTypeService));
+            _scenarios.TryAdd(ScenarioType.AddExpense, new AddExpenseScenario(_userService, _expenseService, _expenseTypeService));
             _scenarios.TryAdd(ScenarioType.AddIncomeType, new AddIncomeTypeScenario(_userService, _incomeTypeService));
             _scenarios.TryAdd(ScenarioType.DeleteIncomeType, new DeleteIncomeTypeScenario(_userService, _incomeTypeService));
             _scenarios.TryAdd(ScenarioType.AddExpenseType, new AddExpenseTypeScenario(_userService, _expenseTypeService));
@@ -252,6 +256,22 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                         };
                         incomeScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
                         await ProcessScenario(incomeScenarioContext, update, ct);
+
+                        #endregion
+
+                        break;
+                    case Constants.CommandAddExpense:
+                        if (!isRegistratedUser)
+                            break;
+
+                        #region Запустить сценарий пользователя добавления расхода.
+
+                        var expenseScenarioContext = new ScenarioContext(ScenarioType.AddExpense)
+                        {
+                            UserId = financeUser.TelegramUserId
+                        };
+                        expenseScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
+                        await ProcessScenario(expenseScenarioContext, update, ct);
 
                         #endregion
 

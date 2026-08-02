@@ -76,6 +76,7 @@ namespace TelegramBotHomeFinancesLib
                     incomeTypeService,
                     expenseTypeService,
                     incomeService,
+                    expenseService,
                     userRepository,
                     contextRepository,
                     botClient);
