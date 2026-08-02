@@ -19,6 +19,7 @@ internal class IncomeService : IIncomeService
             IncomeId = Guid.NewGuid(),
             User = user,
             IncomeType = incomeType,
+            Amount = amount,
             CreatedAt = DateTime.UtcNow,
             Note = note,
         };

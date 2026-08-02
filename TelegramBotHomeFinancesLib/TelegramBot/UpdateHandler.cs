@@ -59,7 +59,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
 
         void RegisterScenarios()
         {
-            _scenarios.TryAdd(ScenarioType.AddIncome, new AddIncomeScenario(_userService, _incomeService));
+            _scenarios.TryAdd(ScenarioType.AddIncome, new AddIncomeScenario(_userService, _incomeService, _incomeTypeService));
             _scenarios.TryAdd(ScenarioType.AddIncomeType, new AddIncomeTypeScenario(_userService, _incomeTypeService));
             _scenarios.TryAdd(ScenarioType.DeleteIncomeType, new DeleteIncomeTypeScenario(_userService, _incomeTypeService));
             _scenarios.TryAdd(ScenarioType.AddExpenseType, new AddExpenseTypeScenario(_userService, _expenseTypeService));
