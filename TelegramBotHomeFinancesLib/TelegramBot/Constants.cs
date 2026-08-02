@@ -14,7 +14,7 @@ internal class Constants
     public const string CommandViewBalance = "/viewbalance"; // Посмотреть баланс.
     public const string CommandSendBalance = "/sendbalance"; // Отправить баланс.
     public const string CommandShowTypeIncome = "/showtypeincome"; // Получить виды доходов.
-    public const string CommandShowTypeExpense = "/showtypeincome"; // Получить виды расходов.
+    public const string CommandShowTypeExpense = "/showtypeexpense"; // Получить виды расходов.
     public const string CommandCancel = "/cancel";
 
     #endregion

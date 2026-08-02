@@ -52,7 +52,6 @@ namespace TelegramBotHomeFinancesLib
 
                 #region Создать инфраструктуру для сценариев.
 
-                IEnumerable<IScenario> scenarios = new List<IScenario>();
                 var contextRepository = new InMemoryScenarioContextRepository();
 
                 #endregion
@@ -76,8 +75,7 @@ namespace TelegramBotHomeFinancesLib
                     incomeService,
                     userRepository,
                     contextRepository,
-                    botClient,
-                    scenarios);
+                    botClient);
 
                 #region Создать меню и описание команд.
 

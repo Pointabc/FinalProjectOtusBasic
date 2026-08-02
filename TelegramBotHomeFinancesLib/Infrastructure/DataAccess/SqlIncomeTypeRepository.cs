@@ -27,12 +27,9 @@ namespace TelegramBotHomeFinancesLib.Infrastructure.DataAccess
         {
             using (var dbContext = _factory.CreateDataContext())
             {
-                var incomeType = await Get(incomeTypeId, ct);
-                if (incomeType == null)
-                    return;
-
-                var incomeTypeModel = ModelMapper.MapToModel(incomeType);
-                await dbContext.DeleteAsync(incomeTypeModel);
+                await dbContext.IncomeTypes
+                    .Where(i => i.IncomeTypeId == incomeTypeId)
+                    .DeleteAsync(ct);
             }
         }
 
@@ -56,6 +53,7 @@ namespace TelegramBotHomeFinancesLib.Infrastructure.DataAccess
             using (var dbContext = _factory.CreateDataContext())
             {
                 var incomeType = await dbContext.IncomeTypes
+                    .LoadWith(i => i.User)
                     .Where(i => i.IncomeTypeId == incomeTypeId)
                     .FirstOrDefaultAsync();
 

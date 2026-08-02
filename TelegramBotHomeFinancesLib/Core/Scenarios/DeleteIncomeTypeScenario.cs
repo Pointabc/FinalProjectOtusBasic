@@ -11,10 +11,6 @@ internal class DeleteIncomeTypeScenario : IScenario
 {
     IUserService _userService;
     IIncomeTypeService _incomeTypeService;
-    /// <summary>
-    /// Для хранения Guid типа прихода при подтверждении удаления.
-    /// </summary>
-    Guid _incomeTypeId = Guid.Empty;
 
     public DeleteIncomeTypeScenario(IUserService userService, IIncomeTypeService incomeTypeService)
     {
@@ -61,18 +57,12 @@ internal class DeleteIncomeTypeScenario : IScenario
                 if (incomeTypeCallbackDto.IncomeTypeId == null)
                     break;
 
-                // Для хранения Guid списка (категории) для задач при подтверждении удаления.
-                _incomeTypeId = (Guid)incomeTypeCallbackDto.IncomeTypeId;
-                // Получить список (категорию) для задач по Id.
+                context.Data["incomeTypeId"] = (Guid)incomeTypeCallbackDto.IncomeTypeId;
                 var incomeType = await _incomeTypeService.Get((Guid)incomeTypeCallbackDto.IncomeTypeId, ct);
 
-                #region Inline-клавиатура.
-
-                // Создаем клавиатуру
                 InlineKeyboardMarkup inlineKeyboardDeleteApprove = new(
                     new[]
                     {
-                            // Первый ряд кнопок.
                             new[]
                             {
                                 InlineKeyboardButton.WithCallbackData(text: "✅Да", callbackData: "yes"),
@@ -80,12 +70,9 @@ internal class DeleteIncomeTypeScenario : IScenario
                             },
                     });
 
-                #endregion
-
-                // Отправляем сообщение с прикрепленной клавиатурой.
                 Message message1 = await botClient.SendMessage(
                     chat,
-                    text: $"Подтверждаете удаление списка {incomeType?.Name} и всех его задач",
+                    text: $"Подтверждаете удаление типа прихода {incomeType?.Name}?",
                     replyMarkup: inlineKeyboardDeleteApprove,
                     cancellationToken: ct
                 );
@@ -133,7 +120,8 @@ internal class DeleteIncomeTypeScenario : IScenario
                 break;
             case "yes":
                 scenarioResult = ScenarioResult.Completed;
-                await _incomeTypeService.Delete(_incomeTypeId, ct);
+                if (context.Data.TryGetValue("incomeTypeId", out var incomeTypeIdObj) && incomeTypeIdObj is Guid incomeTypeId)
+                    await _incomeTypeService.Delete(incomeTypeId, ct);
                 await botClient.SendMessage(
                     chat,
                     "Тип прихода успешно удален.",
@@ -199,7 +187,8 @@ internal class DeleteIncomeTypeScenario : IScenario
             case "Approve":
                 try
                 {
-                    var incomeTypeForDelete = await _incomeTypeService.Get(_incomeTypeId, ct);
+                    var incomeTypeIdForDelete = context.Data.TryGetValue("incomeTypeId", out var idObj) && idObj is Guid id ? id : Guid.Empty;
+                    var incomeTypeForDelete = await _incomeTypeService.Get(incomeTypeIdForDelete, ct);
 
                     #region Inline-клавиатура.
 
@@ -240,35 +229,7 @@ internal class DeleteIncomeTypeScenario : IScenario
                 }
                 break;
             case "Delete":
-                if (update.CallbackQuery == null)
-                    break;
-
-                switch (update.CallbackQuery.Data)
-                {
-                    case "yes":
-                        // Получить задачи со списком (категории) для задач пользователя.
-                        var incomeTypes = await _incomeTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
-                        var incomeType = incomeTypes.Where(x => x.Name == update.Message.Text).FirstOrDefault(); // TODO VS Проверить, по идее нужен текст на inline-кнопке.
-                        //var tasks = await _toDoService.GetByUserIdAndList(toDoUser.UserId, new Guid(), ct); // TODO VS Где взять ToDoList Guid?
-                                                                                                            // Удалить эти задачи.
-                        //foreach (var task in tasks)
-                            //await _toDoService.Delete(task.Id, ct);
-                        // Удалить тип прихода пользователя.
-                        await _incomeTypeService.Delete(incomeType.IncomeTypeId, ct);
-                        break;
-                    case "no":
-                        await botClient.SendMessage(
-                            chat,
-                            "Удаление типа прихода отменено.",
-                            replyMarkup: _replyKeyboardDefault,
-                            cancellationToken: ct);
-                        scenarioResult = ScenarioResult.Completed;
-                        break;
-                    default:
-                        break;
-                }
-
-                scenarioResult = ScenarioResult.Completed;
+                // Ожидается нажатие inline-кнопки (Yes/No) — текст игнорируется.
                 break;
             case "Cancel":
                 scenarioResult = ScenarioResult.Completed;

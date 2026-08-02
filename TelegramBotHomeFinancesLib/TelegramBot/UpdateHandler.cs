@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Concurrent;
+using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -26,7 +27,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
         IScenarioContextRepository _contextRepository;
         ITelegramBotClient _botClient;
         ReplyKeyboardMarkup _replyKeyboard;
-        IEnumerable<IScenario> _scenarios;
+        ConcurrentDictionary<ScenarioType, IScenario> _scenarios;
 
         public UpdateHandler(
             IUserService userService,
@@ -37,8 +38,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             IIncomeService incomeService,
             IUserRepository userRepository,
             IScenarioContextRepository contextRepository,
-            ITelegramBotClient botClient,
-            IEnumerable<IScenario> scenarios)
+            ITelegramBotClient botClient)
         {
             _userService = userService ?? throw new ArgumentNullException();
             _expenseRepository = expenseRepository ?? throw new ArgumentNullException();
@@ -50,7 +50,15 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             _contextRepository = contextRepository ?? throw new ArgumentNullException();
             _botClient = botClient ?? throw new ArgumentNullException();
             _replyKeyboard = new ReplyKeyboardMarkup() ?? throw new ArgumentNullException();
-            _scenarios = scenarios ?? throw new ArgumentNullException();
+            _scenarios = new ConcurrentDictionary<ScenarioType, IScenario>();
+            RegisterScenarios();
+        }
+
+        void RegisterScenarios()
+        {
+            _scenarios.TryAdd(ScenarioType.AddIncome, new AddIncomeScenario(_userService, _incomeService));
+            _scenarios.TryAdd(ScenarioType.AddIncomeType, new AddIncomeTypeScenario(_userService, _incomeTypeService));
+            _scenarios.TryAdd(ScenarioType.DeleteIncomeType, new DeleteIncomeTypeScenario(_userService, _incomeTypeService));
         }
 
         /// <summary>
@@ -58,21 +66,12 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
         /// </summary>
         /// <param name="scenario">Тип сессии/сценария.</param>
         /// <returns>Сессия/сценарий.</returns>
-        async Task<IScenario> GetScenario(ScenarioType scenarioType, long userId)
+        Task<IScenario> GetScenario(ScenarioType scenarioType, long userId)
         {
-            // TODO VS тут возможно нужно получать сценарий из _contextRepository.
-            //var userId = 1; // Как получить пользователя.
-            var scenarioContext = await _contextRepository.GetContext(userId, CancellationToken.None);
-            /*if (scenarioContext?.CurrentScenario != null)
-                return scenarioContext;
-            else
-                throw new NullReferenceException($"Тип сессии/сценария {scenarioType} не найден.");*/
+            if (_scenarios.TryGetValue(scenarioType, out var scenario))
+                return Task.FromResult(scenario);
 
-            var scenarios = _scenarios.Where(x => x.CanHandle(scenarioType));
-            if (scenarios.Any())
-                return scenarios.First();
-            else
-                throw new NullReferenceException($"Тип сессии/сценария {scenarioType} не найден.");
+            throw new NullReferenceException($"Тип сессии/сценария {scenarioType} не найден.");
         }
 
         async Task ProcessScenario(ScenarioContext context, Update update, CancellationToken ct)
@@ -87,7 +86,6 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
 
             if (scenarioResult == ScenarioResult.Completed)
             {
-                //_scenarios = Enumerable.Empty<IScenario>(); // TODO VS по идее нужно удалять IScenario только для определенного пользователя.
                 await _contextRepository.ResetContext(user.Id, ct);
             }
             else
@@ -137,8 +135,6 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                         UserId = financeUser.TelegramUserId
                     };
                     newScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
-                    var addIncomeTypeScenario = new AddIncomeTypeScenario(_userService, _incomeTypeService);
-                    _scenarios = _scenarios.Append(addIncomeTypeScenario).ToList();
                     await ProcessScenario(newScenarioContext, update, ct);
                     break;
                 case "deleteincometype":
@@ -148,8 +144,6 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                     };
 
                     deleteIncomeTypeScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
-                    var deleteListScenario = new DeleteIncomeTypeScenario(_userService, _incomeTypeService);
-                    _scenarios = _scenarios.Append(deleteListScenario).ToList();
                     await ProcessScenario(deleteIncomeTypeScenarioContext, update, ct);
                     break;
                 default:
@@ -178,6 +172,14 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
 
                 // TODO 15032026 эту информацию нужно в логи писать.
                 WriteLine($"Received a message from {username}: {message.Text} : sent at {message.Date.ToLocalTime()}");
+
+                // Проверить, есть ли активный сценарий для пользователя.
+                var activeContext = await _contextRepository.GetContext(user.Id, ct);
+                if (activeContext != null)
+                {
+                    await ProcessScenario(activeContext, update, ct);
+                    return;
+                }
 
                 // Echo received message text
                 string responseText = string.Empty;
@@ -212,8 +214,6 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                             UserId = financeUser.TelegramUserId
                         };
                         incomeScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
-                        var incomeScenario = new AddIncomeScenario(_userService, _incomeService);
-                        _scenarios = _scenarios.Append(incomeScenario).ToList();
                         await ProcessScenario(incomeScenarioContext, update, ct);
 
                         #endregion
@@ -266,7 +266,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                         break;
                     default:
                         WriteLine(Constants.UnknownCommand);
-                        CommandHelp();
+                        responseText = Constants.UnknownCommand;
                         break;
                 }
 
