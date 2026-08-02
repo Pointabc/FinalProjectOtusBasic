@@ -61,7 +61,9 @@ namespace TelegramBotHomeFinancesLib
                 var expenseRepository = new SqlExpenseRepository(dataContextFactory);
                 var incomeRepository = new SqlIncomeRepository(dataContextFactory);
                 var incomeTypeRepository = new SqlIncomeTypeRepository(dataContextFactory);
+                var expenseTypeRepository = new SqlExpenseTypeRepository(dataContextFactory);
                 var incomeTypeService = new IncomeTypeService(incomeTypeRepository);
+                var expenseTypeService = new ExpenseTypeService(expenseTypeRepository);
                 var userRepository = new SqlUserRepository(dataContextFactory);
                 var expenseService = new ExpenseService(expenseRepository);
                 var incomeService = new IncomeService(incomeRepository);
@@ -72,6 +74,7 @@ namespace TelegramBotHomeFinancesLib
                     expenseRepository,
                     incomeRepository,
                     incomeTypeService,
+                    expenseTypeService,
                     incomeService,
                     userRepository,
                     contextRepository,

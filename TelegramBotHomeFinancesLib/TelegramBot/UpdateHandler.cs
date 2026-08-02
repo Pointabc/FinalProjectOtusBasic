@@ -22,6 +22,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
         IIncomeRepository _incomeRepository;
         //IIncomeTypeRepository _incomeTypeRepository;
         IIncomeTypeService _incomeTypeService;
+        IExpenseTypeService _expenseTypeService;
         IIncomeService _incomeService;
         IUserRepository _userRepository;
         IScenarioContextRepository _contextRepository;
@@ -35,6 +36,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             IIncomeRepository incomeRepository,
             //IIncomeTypeRepository incomeTypeRepository,
             IIncomeTypeService incomeTypeService,
+            IExpenseTypeService expenseTypeService,
             IIncomeService incomeService,
             IUserRepository userRepository,
             IScenarioContextRepository contextRepository,
@@ -45,6 +47,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             _incomeRepository = incomeRepository ?? throw new ArgumentNullException();
             //_incomeTypeRepository = incomeTypeRepository ?? throw new ArgumentNullException();
             _incomeTypeService = incomeTypeService ?? throw new ArgumentNullException();
+            _expenseTypeService = expenseTypeService ?? throw new ArgumentNullException();
             _incomeService = incomeService ?? throw new ArgumentNullException();
             _userRepository = userRepository ?? throw new ArgumentNullException();
             _contextRepository = contextRepository ?? throw new ArgumentNullException();
@@ -59,6 +62,8 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             _scenarios.TryAdd(ScenarioType.AddIncome, new AddIncomeScenario(_userService, _incomeService));
             _scenarios.TryAdd(ScenarioType.AddIncomeType, new AddIncomeTypeScenario(_userService, _incomeTypeService));
             _scenarios.TryAdd(ScenarioType.DeleteIncomeType, new DeleteIncomeTypeScenario(_userService, _incomeTypeService));
+            _scenarios.TryAdd(ScenarioType.AddExpenseType, new AddExpenseTypeScenario(_userService, _expenseTypeService));
+            _scenarios.TryAdd(ScenarioType.DeleteExpenseType, new DeleteExpenseTypeScenario(_userService, _expenseTypeService));
         }
 
         /// <summary>
@@ -81,6 +86,21 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
 
             var user = GetUserFromUpdate(update);
             var scenario = await GetScenario(context.CurrentScenario, user.Id);
+
+            // Обработка команды отмены сценария.
+            var input = update switch
+            {
+                { Message: { Text: { } text } } => text,
+                _ => null
+            };
+            if (string.Equals(input, Constants.CommandCancel, StringComparison.OrdinalIgnoreCase))
+            {
+                var chat = GetChatFromUpdate(update);
+                var replyKeyboardDefault = await CreateKeyboardMarkupDefault();
+                await _botClient.SendMessage(chat, "Операция отменена.", replyMarkup: replyKeyboardDefault, cancellationToken: ct);
+                await _contextRepository.ResetContext(user.Id, ct);
+                return;
+            }
 
             var scenarioResult = await scenario.HandleMessageAsync(_botClient, context, update, ct);
 
@@ -145,6 +165,23 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
 
                     deleteIncomeTypeScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
                     await ProcessScenario(deleteIncomeTypeScenarioContext, update, ct);
+                    break;
+                case "addexpensetype":
+                    var newExpenseTypeScenarioContext = new ScenarioContext(ScenarioType.AddExpenseType)
+                    {
+                        UserId = financeUser.TelegramUserId
+                    };
+                    newExpenseTypeScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
+                    await ProcessScenario(newExpenseTypeScenarioContext, update, ct);
+                    break;
+                case "deleteexpensetype":
+                    var deleteExpenseTypeScenarioContext = new ScenarioContext(ScenarioType.DeleteExpenseType)
+                    {
+                        UserId = financeUser.TelegramUserId
+                    };
+
+                    deleteExpenseTypeScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
+                    await ProcessScenario(deleteExpenseTypeScenarioContext, update, ct);
                     break;
                 default:
                     break;
@@ -264,6 +301,39 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                             cancellationToken: ct
                         );
                         break;
+                    case Constants.CommandShowTypeExpense:
+                        if (!isRegistratedUser)
+                            break;
+
+                        InlineKeyboardMarkup inlineKeyboardExpense = new InlineKeyboardMarkup();
+                        // Добавить типы расходов из хранилища.
+                        var expenseTypes = await _expenseTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
+                        foreach (var expenseType in expenseTypes)
+                        {
+                            var expenseTypeCallbackDto = ExpenseTypeCallbackDto.FromString($"show|{expenseType.ExpenseTypeId}");
+                            inlineKeyboardExpense.AddNewRow(
+                                new[]
+                                {
+                                    InlineKeyboardButton.WithCallbackData(text: expenseType.Name, callbackData: expenseTypeCallbackDto.ToString()),
+                                });
+                        }
+                        // Кнопки Добавить и Удалить.
+                        InlineKeyboardButton[] addDeleteExpense =
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData(text: "🆕 Добавить", callbackData: "addexpensetype"),
+                                InlineKeyboardButton.WithCallbackData(text: "❌ Удалить", callbackData: "deleteexpensetype"),
+                            };
+                        inlineKeyboardExpense.AddNewRow(addDeleteExpense);
+
+                        // Отправляем сообщение с прикрепленной клавиатурой.
+                        Message message2 = await botClient.SendMessage(
+                            chat,
+                            text: "Типы расходов",
+                            replyMarkup: inlineKeyboardExpense,
+                            cancellationToken: ct
+                        );
+                        break;
                     default:
                         WriteLine(Constants.UnknownCommand);
                         responseText = Constants.UnknownCommand;
@@ -314,6 +384,8 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             {
                 buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandAddIncome) });
                 buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandAddExpense) });
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandShowTypeIncome) });
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandShowTypeExpense) });
                 buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandViewBalance) });
                 // TODO VS Добавить другие кнопки меню.
             }
@@ -363,6 +435,11 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             responseText.AppendLine($"{Constants.CommandStart} - Начать работать с ботом.");
             responseText.AppendLine($"{Constants.CommandHelp} - Вывести команды.");
             responseText.AppendLine($"{Constants.CommandInfo} - Вывести информацию о Telegram боте.");
+            responseText.AppendLine($"{Constants.CommandAddIncome} - Добавить доход.");
+            responseText.AppendLine($"{Constants.CommandAddExpense} - Добавить расход.");
+            responseText.AppendLine($"{Constants.CommandViewBalance} - Посмотреть баланс.");
+            responseText.AppendLine($"{Constants.CommandShowTypeIncome} - Получить виды доходов.");
+            responseText.AppendLine($"{Constants.CommandShowTypeExpense} - Получить виды расходов.");
 
             return responseText.ToString();
         }
@@ -490,6 +567,8 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             buttons.Add(new KeyboardButton[] { new KeyboardButton("/start") });
             buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandAddIncome) });
             buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandAddExpense) });
+            buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandShowTypeIncome) });
+            buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandShowTypeExpense) });
             //buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandReport) });
 
             return new ReplyKeyboardMarkup(buttons) { ResizeKeyboard = true };

@@ -58,7 +58,9 @@ internal static class ModelMapper
 
         return new ExpenseType
         {
+            ExpenseTypeId = model.ExpenseTypeId,
             Name = model.Name,
+            User = model.User,
             CreatedAt = model.CreatedAt,
         };
     }
@@ -76,7 +78,10 @@ internal static class ModelMapper
 
         return new ExpenseTypeModel
         {
+            ExpenseTypeId = entity.ExpenseTypeId,
             Name = entity.Name,
+            FinanceUserId = entity.User.FinanceUserId,
+            User = entity.User,
             CreatedAt = entity.CreatedAt,
         };
     }
