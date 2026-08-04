@@ -132,7 +132,7 @@ internal class AddExpenseScenario : IScenario
                 inlineKeyboard.AddNewRow(
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData(text: "Не определено", callbackData: new ExpenseTypeCallbackDto { Action = "SelectExpenseTypeForAdd", ExpenseTypeId = null }.ToString()),
+                        InlineKeyboardButton.WithCallbackData(text: "📌 Не определено", callbackData: new ExpenseTypeCallbackDto { Action = "SelectExpenseTypeForAdd", ExpenseTypeId = null }.ToString()),
                     });
                 foreach (var expenseType in expenseTypes)
                 {

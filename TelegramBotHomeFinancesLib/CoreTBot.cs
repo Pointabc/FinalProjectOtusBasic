@@ -89,9 +89,10 @@ namespace TelegramBotHomeFinancesLib
                     new BotCommand { Command = "start", Description = "Начать работать с ботом." },
                     new BotCommand { Command = "help", Description = "Вывести команды." },
                     new BotCommand { Command = "info", Description = "Информация от боте." },
-                    //new BotCommand { Command = "addtask", Description = "Добавить задчу." },
-                    //new BotCommand { Command = "show", Description = "Вывести задачи в работе." },
-                    //new BotCommand { Command = "report", Description = "Вывести отчет по задачам." },
+                    new BotCommand { Command = "addincome", Description = "Добавить приход." },
+                    new BotCommand { Command = "showtypeincome", Description = "Типы приходов." },
+                    new BotCommand { Command = "addexpense", Description = "Добавить расход." },
+                    new BotCommand { Command = "showtypeexpense", Description = "Типы расходов." },
                 };
 
                 // Устанавливаем команды

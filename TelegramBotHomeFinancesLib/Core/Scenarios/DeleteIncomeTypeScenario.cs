@@ -167,7 +167,6 @@ internal class DeleteIncomeTypeScenario : IScenario
         var chat = UpdateHandler.GetChatFromUpdate(update);
         var currentStep = context.CurrentStep;
         ReplyKeyboardMarkup _replyKeyboard = await UpdateHandler.CreateKeyboardMarkupCancel();
-        ReplyKeyboardMarkup _replyKeyboardDefault = await UpdateHandler.CreateKeyboardMarkupDefault();
         var userInput = UpdateHandler.GetMessageFromUpdate(update);
         var userFromUpdate = UpdateHandler.GetUserFromUpdate(update);
         var financeUser = await _userService.GetUser(userFromUpdate.Id, ct);
@@ -233,20 +232,11 @@ internal class DeleteIncomeTypeScenario : IScenario
                 }
                 catch (Exception ex)
                 {
-                    // TODO VS Проверить!!!
                     await botClient.SendMessage(chat, ex.Message, replyMarkup: _replyKeyboard, cancellationToken: ct);
-                    /*switch (currentStep)
-                    {
-                        case "Name":
-                            await botClient.SendMessage(chat, "Введите название типа прихода:", replyMarkup: _replyKeyboard, cancellationToken: ct);
-                            break;
-                    }*/
                 }
                 break;
-            case "Delete":
-                // Ожидается нажатие inline-кнопки (Yes/No) — текст игнорируется.
-                break;
             case "Cancel":
+                ReplyKeyboardMarkup _replyKeyboardDefault = await UpdateHandler.CreateKeyboardMarkupDefault();
                 scenarioResult = ScenarioResult.Completed;
                 context.CurrentStep = "Сценарий завершен.";
                 await botClient.SendMessage(chat, "Операция отменена.", replyMarkup: _replyKeyboardDefault, cancellationToken: ct);

@@ -31,4 +31,14 @@ internal class Constants
     public const string KeyUserIdName = "userId";
 
     #endregion
+
+    #region Названия действий (Action) для CallbackDto
+
+    public const string ActionNameShow = "show";
+    public const string ActionNameAddIncomeType = "addincometype";
+    public const string ActionNameDeleteIncomeType = "deleteincometype";
+    public const string ActionNameAddExpenseType = "addexpensetype";
+    public const string ActionNameDeleteExpenseType = "deleteexpensetype";
+
+    #endregion
 }

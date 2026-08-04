@@ -12,11 +12,11 @@ internal class IncomeCallbackDto : CallbackDto
     public static new IncomeCallbackDto FromString(string input)
     {
         var splitInput = input.Split('|');
-        var incomeCallbackDto = new IncomeCallbackDto();
-        incomeCallbackDto.Action = splitInput.Length == 1 ? input : splitInput[0];
-        incomeCallbackDto.IncomeId = splitInput.Length > 1 && splitInput[1] != string.Empty ? Guid.Parse(splitInput[1]) : null;
-
-        return incomeCallbackDto;
+        return new IncomeCallbackDto
+        {
+            Action = splitInput.Length == 1 ? input : splitInput[0],
+            IncomeId = splitInput.Length > 1 && splitInput[1] != string.Empty ? Guid.Parse(splitInput[1]) : null
+        };
     }
 
     public override string ToString()

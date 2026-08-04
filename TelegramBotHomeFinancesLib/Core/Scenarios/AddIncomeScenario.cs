@@ -132,7 +132,7 @@ internal class AddIncomeScenario : IScenario
                 inlineKeyboard.AddNewRow(
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData(text: "Не определено", callbackData: new IncomeTypeCallbackDto { Action = "SelectIncomeType", IncomeTypeId = null }.ToString()),
+                        InlineKeyboardButton.WithCallbackData(text: "📌 Не определено", callbackData: new IncomeTypeCallbackDto { Action = "SelectIncomeType", IncomeTypeId = null }.ToString()),
                     });
                 foreach (var incomeType in incomeTypes)
                 {

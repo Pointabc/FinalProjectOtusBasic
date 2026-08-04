@@ -97,6 +97,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                 { Message: { Text: { } text } } => text,
                 _ => null
             };
+
             if (string.Equals(input, Constants.CommandCancel, StringComparison.OrdinalIgnoreCase))
             {
                 var chat = GetChatFromUpdate(update);
@@ -153,7 +154,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             // Обрабатываем нажатие в зависимости от callbackData
             switch (incomeTypeCallbackDto.Action)
             {
-                case "addincometype":
+                case Constants.ActionNameAddIncomeType:
                     var newScenarioContext = new ScenarioContext(ScenarioType.AddIncomeType)
                     {
                         UserId = financeUser.TelegramUserId
@@ -161,7 +162,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                     newScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
                     await ProcessScenario(newScenarioContext, update, ct);
                     break;
-                case "deleteincometype":
+                case Constants.ActionNameDeleteIncomeType:
                     var deleteIncomeTypeScenarioContext = new ScenarioContext(ScenarioType.DeleteIncomeType)
                     {
                         UserId = financeUser.TelegramUserId
@@ -170,7 +171,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                     deleteIncomeTypeScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
                     await ProcessScenario(deleteIncomeTypeScenarioContext, update, ct);
                     break;
-                case "addexpensetype":
+                case Constants.ActionNameAddExpenseType:
                     var newExpenseTypeScenarioContext = new ScenarioContext(ScenarioType.AddExpenseType)
                     {
                         UserId = financeUser.TelegramUserId
@@ -178,7 +179,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                     newExpenseTypeScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
                     await ProcessScenario(newExpenseTypeScenarioContext, update, ct);
                     break;
-                case "deleteexpensetype":
+                case Constants.ActionNameDeleteExpenseType:
                     var deleteExpenseTypeScenarioContext = new ScenarioContext(ScenarioType.DeleteExpenseType)
                     {
                         UserId = financeUser.TelegramUserId
@@ -280,42 +281,34 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                         if (!isRegistratedUser)
                             break;
 
-                        #region Запустить сессиею/сценарий пользователя добавления задачи.
-
-                        /*var incomeTypeScenarioContext = new ScenarioContext(ScenarioType.AddIncomeType)
-                        {
-                            UserId = financeUser.TelegramUserId
-                        };
-                        incomeTypeScenarioContext.Data.Add(Constants.KeyUserIdName, chat.Id);
-                        var incomeTypeScenario = new AddIncomeTypeScenario(_userService, _incomeTypeService);
-                        _scenarios = _scenarios.Append(incomeTypeScenario).ToList();
-                        await ProcessScenario(incomeTypeScenarioContext, update, ct);*/
-
-                        #endregion
                         InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
                         // Тип «Не определено» отображается первым, в базе хранится как NULL.
                         inlineKeyboard.AddNewRow(
                             new[]
                             {
-                                InlineKeyboardButton.WithCallbackData(text: "Не определено", callbackData: "show|"),
+                                InlineKeyboardButton.WithCallbackData(
+                                    text: "📌 Не определено",
+                                    callbackData: new IncomeTypeCallbackDto { Action = Constants.ActionNameShow, IncomeTypeId = null }.ToString()),
                             });
+
                         // Добавить типы приходов из хранилища.
                         var incomeTypes = await _incomeTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
                         foreach (var incomeType in incomeTypes)
                         {
-                            var incomeTypeCallbackDto = IncomeTypeCallbackDto.FromString($"show|{incomeType.IncomeTypeId}");
                             inlineKeyboard.AddNewRow(
                                 new[]
                                 {
-                                    InlineKeyboardButton.WithCallbackData(text: incomeType.Name, callbackData: incomeTypeCallbackDto.ToString()),
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: incomeType.Name,
+                                        callbackData: new IncomeCallbackDto { Action = Constants.ActionNameShow, IncomeId = incomeType.IncomeTypeId }.ToString()),
                                 });
                         }
                         // Кнопки Добавить и Удалить.
                         InlineKeyboardButton[] addDelete =
                             new[]
                             {
-                                InlineKeyboardButton.WithCallbackData(text: "🆕 Добавить", callbackData: "addincometype"),
-                                InlineKeyboardButton.WithCallbackData(text: "❌ Удалить", callbackData: "deleteincometype"),
+                                InlineKeyboardButton.WithCallbackData(text: "🆕 Добавить", callbackData: Constants.ActionNameAddIncomeType),
+                                InlineKeyboardButton.WithCallbackData(text: "❌ Удалить", callbackData: Constants.ActionNameDeleteIncomeType),
                             };
                         inlineKeyboard.AddNewRow(addDelete);
 
@@ -336,25 +329,29 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                         inlineKeyboardExpense.AddNewRow(
                             new[]
                             {
-                                InlineKeyboardButton.WithCallbackData(text: "Не определено", callbackData: "show|"),
+                                InlineKeyboardButton.WithCallbackData(
+                                    text: "📌 Не определено",
+                                    callbackData: new ExpenseTypeCallbackDto { Action = Constants.ActionNameShow, ExpenseTypeId = null }.ToString()),
                             });
+
                         // Добавить типы расходов из хранилища.
                         var expenseTypes = await _expenseTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
                         foreach (var expenseType in expenseTypes)
                         {
-                            var expenseTypeCallbackDto = ExpenseTypeCallbackDto.FromString($"show|{expenseType.ExpenseTypeId}");
                             inlineKeyboardExpense.AddNewRow(
                                 new[]
                                 {
-                                    InlineKeyboardButton.WithCallbackData(text: expenseType.Name, callbackData: expenseTypeCallbackDto.ToString()),
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: expenseType.Name,
+                                        callbackData: new ExpenseTypeCallbackDto { Action = Constants.ActionNameShow, ExpenseTypeId = expenseType.ExpenseTypeId }.ToString()),
                                 });
                         }
                         // Кнопки Добавить и Удалить.
                         InlineKeyboardButton[] addDeleteExpense =
                             new[]
                             {
-                                InlineKeyboardButton.WithCallbackData(text: "🆕 Добавить", callbackData: "addexpensetype"),
-                                InlineKeyboardButton.WithCallbackData(text: "❌ Удалить", callbackData: "deleteexpensetype"),
+                                InlineKeyboardButton.WithCallbackData(text: "🆕 Добавить", callbackData: Constants.ActionNameAddExpenseType),
+                                InlineKeyboardButton.WithCallbackData(text: "❌ Удалить", callbackData: Constants.ActionNameDeleteExpenseType),
                             };
                         inlineKeyboardExpense.AddNewRow(addDeleteExpense);
 
@@ -392,37 +389,6 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
         private async Task OnUnknown(Update update)
         {
             throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Создать разметку клавиатуры по умолчанию (доступны основные действия).
-        /// </summary>
-        /// <param name="user">Пользователь.</param>
-        /// <param name="botClient">Бот клиент.</param>
-        /// <param name="update">Обновления от Telegram.</param>
-        /// <param name="ct">Токен отмены.</param>
-        /// <returns></returns>
-        private async Task<ReplyKeyboardMarkup> CreateKeyboardMarkup(
-            FinanceUser user,
-            ITelegramBotClient botClient,
-            Update update,
-            CancellationToken ct)
-        {
-            var isValidUser = await ValidateUserAsync(user, botClient, update, _replyKeyboard, ct);
-            var buttons = new List<KeyboardButton[]>();
-
-            buttons.Add(new KeyboardButton[] { new KeyboardButton("/start") });
-            if (isValidUser)
-            {
-                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandAddIncome) });
-                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandAddExpense) });
-                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandShowTypeIncome) });
-                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandShowTypeExpense) });
-                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandViewBalance) });
-                // TODO VS Добавить другие кнопки меню.
-            }
-
-            return new ReplyKeyboardMarkup(buttons) { ResizeKeyboard = true };
         }
 
         /// <summary>
@@ -590,6 +556,37 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
         #region Клавиатуры для сценариев и не только.
 
         /// <summary>
+        /// Создать разметку клавиатуры по умолчанию (доступны основные действия).
+        /// </summary>
+        /// <param name="user">Пользователь.</param>
+        /// <param name="botClient">Бот клиент.</param>
+        /// <param name="update">Обновления от Telegram.</param>
+        /// <param name="ct">Токен отмены.</param>
+        /// <returns></returns>
+        private async Task<ReplyKeyboardMarkup> CreateKeyboardMarkup(
+            FinanceUser user,
+            ITelegramBotClient botClient,
+            Update update,
+            CancellationToken ct)
+        {
+            var isValidUser = await ValidateUserAsync(user, botClient, update, _replyKeyboard, ct);
+            var buttons = new List<KeyboardButton[]>();
+
+            buttons.Add(new KeyboardButton[] { new KeyboardButton("/start") });
+            if (isValidUser)
+            {
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandAddIncome) });
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandAddExpense) });
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandShowTypeIncome) });
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandShowTypeExpense) });
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandViewBalance) });
+                // TODO VS Добавить другие кнопки меню.
+            }
+
+            return new ReplyKeyboardMarkup(buttons) { ResizeKeyboard = true };
+        }
+
+        /// <summary>
         /// Создать клавиатуру по умолчанию.
         /// </summary>
         /// <returns>Клавиатура по умолчанию.</returns>
@@ -601,7 +598,7 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
             buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandAddExpense) });
             buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandShowTypeIncome) });
             buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandShowTypeExpense) });
-            //buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandReport) });
+            buttons.Add(new KeyboardButton[] { new KeyboardButton(Constants.CommandViewBalance) });
 
             return new ReplyKeyboardMarkup(buttons) { ResizeKeyboard = true };
         }
