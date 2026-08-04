@@ -2,6 +2,7 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramBotHomeFinancesLib.Core.Entities;
 using TelegramBotHomeFinancesLib.Core.Services;
 using TelegramBotHomeFinancesLib.DTO;
 using TelegramBotHomeFinancesLib.TelegramBot;
@@ -57,15 +58,16 @@ internal class AddIncomeScenario : IScenario
         switch (incomeTypeCallbackDto.Action)
         {
             case "SelectIncomeType":
-                if (incomeTypeCallbackDto.IncomeTypeId == null)
-                    break;
-
-                var incomeType = await _incomeTypeService.Get((Guid)incomeTypeCallbackDto.IncomeTypeId, ct);
-                if (incomeType == null)
+                IncomeType? incomeType = null;
+                if (incomeTypeCallbackDto.IncomeTypeId != null)
                 {
-                    scenarioResult = ScenarioResult.Completed;
-                    await botClient.SendMessage(chat, "Тип прихода не найден.", replyMarkup: replyKeyboardDefault, cancellationToken: ct);
-                    break;
+                    incomeType = await _incomeTypeService.Get((Guid)incomeTypeCallbackDto.IncomeTypeId, ct);
+                    if (incomeType == null)
+                    {
+                        scenarioResult = ScenarioResult.Completed;
+                        await botClient.SendMessage(chat, "Тип прихода не найден.", replyMarkup: replyKeyboardDefault, cancellationToken: ct);
+                        break;
+                    }
                 }
 
                 var amount = context.Data.TryGetValue("amount", out var amountObj) && amountObj is decimal amountValue ? amountValue : 0m;
@@ -79,7 +81,8 @@ internal class AddIncomeScenario : IScenario
 
                 context.CurrentStep = "Приход создан.";
                 scenarioResult = ScenarioResult.Completed;
-                await botClient.SendMessage(chat, $"Приход добавлен: {amount.ToString("0.##", CultureInfo.InvariantCulture)} — {incomeType.Name}.", replyMarkup: replyKeyboardDefault, cancellationToken: ct);
+                var typeName = incomeType?.Name ?? "Не определено";
+                await botClient.SendMessage(chat, $"Приход добавлен: {amount.ToString("0.##", CultureInfo.InvariantCulture)} — {typeName}.", replyMarkup: replyKeyboardDefault, cancellationToken: ct);
                 break;
             default:
                 break;
@@ -124,15 +127,13 @@ internal class AddIncomeScenario : IScenario
                 context.Data["amount"] = amount;
 
                 var incomeTypes = await _incomeTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
-                if (!incomeTypes.Any())
-                {
-                    context.CurrentStep = "Нет типов прихода.";
-                    scenarioResult = ScenarioResult.Completed;
-                    await botClient.SendMessage(chat, "Нет типов прихода. Сначала добавьте тип прихода через команду /showtypeincome.", replyMarkup: _replyKeyboardDefault, cancellationToken: ct);
-                    break;
-                }
 
                 InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+                inlineKeyboard.AddNewRow(
+                    new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData(text: "Не определено", callbackData: new IncomeTypeCallbackDto { Action = "SelectIncomeType", IncomeTypeId = null }.ToString()),
+                    });
                 foreach (var incomeType in incomeTypes)
                 {
                     var incomeTypeCallbackDto = new IncomeTypeCallbackDto

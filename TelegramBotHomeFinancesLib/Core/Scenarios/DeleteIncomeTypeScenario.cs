@@ -82,6 +82,14 @@ internal class DeleteIncomeTypeScenario : IScenario
 
                 return scenarioResult;
             case "deleteincometype":
+                // Показать клавиатуру с единственной командой /cancel.
+                var replyKeyboardCancel = await UpdateHandler.CreateKeyboardMarkupCancel();
+                await botClient.SendMessage(
+                    chat,
+                    "Удаление типа прихода. Доступна только команда /cancel.",
+                    replyMarkup: replyKeyboardCancel,
+                    cancellationToken: ct);
+
                 // Получить типы приходов.
                 var userIncomeTypes = await _incomeTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
 
@@ -169,6 +177,13 @@ internal class DeleteIncomeTypeScenario : IScenario
         switch (currentStep)
         {
             case null:
+                // Показать клавиатуру с единственной командой /cancel.
+                await botClient.SendMessage(
+                    chat,
+                    "Удаление типа прихода. Доступна только команда /cancel.",
+                    replyMarkup: _replyKeyboard,
+                    cancellationToken: ct);
+
                 // Создать inline-кнопки для выбора списка (категории) для задачи.
                 InlineKeyboardMarkup inlineKeyboardForDelete = new InlineKeyboardMarkup();
                 // Добавить списки (категории) для задач, если есть в хранилище списков (категорий) для задач.

@@ -122,7 +122,7 @@ internal static class ModelMapper
         return new ExpenseModel
         {
             ExpenseId = entity.ExpenseId,
-            ExpenseTypeId = entity.expenseType.ExpenseTypeId,
+            ExpenseTypeId = entity.expenseType?.ExpenseTypeId,
             ExpenseType = entity.expenseType,
             Amount = entity.Amount,
             Note = entity.Note,
@@ -208,7 +208,7 @@ internal static class ModelMapper
         return new IncomeModel
         {
             IncomeId = entity.IncomeId,
-            IncomeTypeId = entity.IncomeType.IncomeTypeId,
+            IncomeTypeId = entity.IncomeType?.IncomeTypeId,
             IncomeType = entity.IncomeType,
             Amount = entity.Amount,
             Note = entity.Note,

@@ -21,7 +21,7 @@ internal interface IIncomeService
     /// <param name="note">Примечание.</param>
     /// <param name="ct">Токен отмены.</param>
     /// <returns>Приход.</returns>
-    Task<Income> Add(FinanceUser user, IncomeType incomeType, Decimal amount, string note, CancellationToken ct);
+    Task<Income> Add(FinanceUser user, IncomeType? incomeType, Decimal amount, string note, CancellationToken ct);
 
     /// <summary>
     /// Удалить приход.

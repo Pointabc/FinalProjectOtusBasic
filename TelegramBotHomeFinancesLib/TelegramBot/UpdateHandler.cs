@@ -293,6 +293,12 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
 
                         #endregion
                         InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+                        // Тип «Не определено» отображается первым, в базе хранится как NULL.
+                        inlineKeyboard.AddNewRow(
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData(text: "Не определено", callbackData: "show|"),
+                            });
                         // Добавить типы приходов из хранилища.
                         var incomeTypes = await _incomeTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
                         foreach (var incomeType in incomeTypes)
@@ -326,6 +332,12 @@ namespace TelegramBotHomeFinancesLib.TelegramBot
                             break;
 
                         InlineKeyboardMarkup inlineKeyboardExpense = new InlineKeyboardMarkup();
+                        // Тип «Не определено» отображается первым, в базе хранится как NULL.
+                        inlineKeyboardExpense.AddNewRow(
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData(text: "Не определено", callbackData: "show|"),
+                            });
                         // Добавить типы расходов из хранилища.
                         var expenseTypes = await _expenseTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
                         foreach (var expenseType in expenseTypes)

@@ -12,9 +12,9 @@ namespace TelegramBotHomeFinancesLib.Core.DataAccess.Models
         [PrimaryKey]
         public Guid IncomeId { get; set; }
         [Column]
-        public Guid IncomeTypeId { get; set; }
+        public Guid? IncomeTypeId { get; set; }
         [Association(ThisKey = nameof(IncomeTypeId), OtherKey = nameof(IncomeTypeModel.IncomeTypeId))]
-        public IncomeType IncomeType { get; set; }
+        public IncomeType? IncomeType { get; set; }
         [Column]
         public decimal Amount { get; set; }
         [Column]

@@ -12,7 +12,7 @@ internal class ExpenseService : IExpenseService
         _expenseRepository = expenseRepository;
     }
 
-    public async Task<Expense> Add(FinanceUser user, ExpenseType expenseType, decimal amount, string note, CancellationToken ct)
+    public async Task<Expense> Add(FinanceUser user, ExpenseType? expenseType, decimal amount, string note, CancellationToken ct)
     {
         var expense = new Expense
         {

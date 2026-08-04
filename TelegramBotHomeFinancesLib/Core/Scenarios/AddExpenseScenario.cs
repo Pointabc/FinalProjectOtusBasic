@@ -2,6 +2,7 @@ using System.Globalization;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramBotHomeFinancesLib.Core.Entities;
 using TelegramBotHomeFinancesLib.Core.Services;
 using TelegramBotHomeFinancesLib.DTO;
 using TelegramBotHomeFinancesLib.TelegramBot;
@@ -57,15 +58,16 @@ internal class AddExpenseScenario : IScenario
         switch (expenseTypeCallbackDto.Action)
         {
             case "SelectExpenseTypeForAdd":
-                if (expenseTypeCallbackDto.ExpenseTypeId == null)
-                    break;
-
-                var expenseType = await _expenseTypeService.Get((Guid)expenseTypeCallbackDto.ExpenseTypeId, ct);
-                if (expenseType == null)
+                ExpenseType? expenseType = null;
+                if (expenseTypeCallbackDto.ExpenseTypeId != null)
                 {
-                    scenarioResult = ScenarioResult.Completed;
-                    await botClient.SendMessage(chat, "Тип расхода не найден.", replyMarkup: replyKeyboardDefault, cancellationToken: ct);
-                    break;
+                    expenseType = await _expenseTypeService.Get((Guid)expenseTypeCallbackDto.ExpenseTypeId, ct);
+                    if (expenseType == null)
+                    {
+                        scenarioResult = ScenarioResult.Completed;
+                        await botClient.SendMessage(chat, "Тип расхода не найден.", replyMarkup: replyKeyboardDefault, cancellationToken: ct);
+                        break;
+                    }
                 }
 
                 var amount = context.Data.TryGetValue("amount", out var amountObj) && amountObj is decimal amountValue ? amountValue : 0m;
@@ -79,7 +81,8 @@ internal class AddExpenseScenario : IScenario
 
                 context.CurrentStep = "Расход создан.";
                 scenarioResult = ScenarioResult.Completed;
-                await botClient.SendMessage(chat, $"Расход добавлен: {amount.ToString("0.##", CultureInfo.InvariantCulture)} — {expenseType.Name}.", replyMarkup: replyKeyboardDefault, cancellationToken: ct);
+                var typeName = expenseType?.Name ?? "Не определено";
+                await botClient.SendMessage(chat, $"Расход добавлен: {amount.ToString("0.##", CultureInfo.InvariantCulture)} — {typeName}.", replyMarkup: replyKeyboardDefault, cancellationToken: ct);
                 break;
             default:
                 break;
@@ -124,15 +127,13 @@ internal class AddExpenseScenario : IScenario
                 context.Data["amount"] = amount;
 
                 var expenseTypes = await _expenseTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
-                if (!expenseTypes.Any())
-                {
-                    context.CurrentStep = "Нет типов расхода.";
-                    scenarioResult = ScenarioResult.Completed;
-                    await botClient.SendMessage(chat, "Нет типов расхода. Сначала добавьте тип расхода через команду /showtypeexpense.", replyMarkup: _replyKeyboardDefault, cancellationToken: ct);
-                    break;
-                }
 
                 InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+                inlineKeyboard.AddNewRow(
+                    new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData(text: "Не определено", callbackData: new ExpenseTypeCallbackDto { Action = "SelectExpenseTypeForAdd", ExpenseTypeId = null }.ToString()),
+                    });
                 foreach (var expenseType in expenseTypes)
                 {
                     var expenseTypeCallbackDto = new ExpenseTypeCallbackDto

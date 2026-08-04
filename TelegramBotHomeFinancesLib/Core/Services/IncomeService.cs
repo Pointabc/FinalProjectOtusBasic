@@ -12,7 +12,7 @@ internal class IncomeService : IIncomeService
         _incomeRepository = incomeRepository;
     }
 
-    public async Task<Income> Add(FinanceUser user, IncomeType incomeType, decimal amount, string note, CancellationToken ct)
+    public async Task<Income> Add(FinanceUser user, IncomeType? incomeType, decimal amount, string note, CancellationToken ct)
     {
         var income = new Income
         {

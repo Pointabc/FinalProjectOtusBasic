@@ -82,6 +82,14 @@ internal class DeleteExpenseTypeScenario : IScenario
 
                 return scenarioResult;
             case "deleteexpensetype":
+                // Показать клавиатуру с единственной командой /cancel.
+                var replyKeyboardCancel = await UpdateHandler.CreateKeyboardMarkupCancel();
+                await botClient.SendMessage(
+                    chat,
+                    "Удаление типа расхода. Доступна только команда /cancel.",
+                    replyMarkup: replyKeyboardCancel,
+                    cancellationToken: ct);
+
                 var userExpenseTypes = await _expenseTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
 
                 if (!userExpenseTypes.Any())
@@ -166,6 +174,13 @@ internal class DeleteExpenseTypeScenario : IScenario
         switch (currentStep)
         {
             case null:
+                // Показать клавиатуру с единственной командой /cancel.
+                await botClient.SendMessage(
+                    chat,
+                    "Удаление типа расхода. Доступна только команда /cancel.",
+                    replyMarkup: _replyKeyboard,
+                    cancellationToken: ct);
+
                 InlineKeyboardMarkup inlineKeyboardForDelete = new InlineKeyboardMarkup();
                 var userExpenseTypes = await _expenseTypeService.GetAllByUserId(financeUser.FinanceUserId, ct);
                 foreach (var userExpenseType in userExpenseTypes)

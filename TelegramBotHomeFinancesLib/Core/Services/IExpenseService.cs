@@ -21,7 +21,7 @@ internal interface IExpenseService
     /// <param name="note">Примечание.</param>
     /// <param name="ct">Токен отмены.</param>
     /// <returns>Расход.</returns>
-    Task<Expense> Add(FinanceUser user, ExpenseType expenseType, Decimal amount, string note, CancellationToken ct);
+    Task<Expense> Add(FinanceUser user, ExpenseType? expenseType, Decimal amount, string note, CancellationToken ct);
 
     /// <summary>
     /// Удалить расход.
